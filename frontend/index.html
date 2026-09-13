@@ -134,8 +134,15 @@ async function getClient(){
 
 /* ---------- tx lifecycle (never trust the receipt alone) ---------- */
 async function readContract(fn, args){
-  const client = await getClient(); if(!client) throw new Error("No wallet connected");
-  const raw = await client.readContract({ address: CONTRACT_ADDR, functionName: fn, args });
+  /* Read-only: no burner wallet needed. genlayer-py requires an account for
+     reads on Studionet; the SDK is identical in the browser — create ONE
+     ephemeral (non-stored, non-funded) client for the session. Anyone can
+     open a passport without first creating a wallet. */
+  if(!window.__llReadClient){
+    const pk = SDK.generatePrivateKey();
+    window.__llReadClient = SDK.createClient({ chain: CHAIN, account: SDK.createAccount(pk) });
+  }
+  const raw = await window.__llReadClient.readContract({ address: CONTRACT_ADDR, functionName: fn, args });
   return typeof raw === "string" ? parseJsonSafe(raw) : raw;
 }
 async function sendWrite(fn, args, onStatus){
@@ -379,7 +386,12 @@ function renderPassport(aid){
     if(!rec || rec.error){ pp.innerHTML = '<p class="err">Assessment not found onchain: '+esc(rec&&rec.error||aid)+'</p>'; return; }
     const d = rec.decision || "";
     const st = rec.status || "";
-    const finality = st === "ACCEPTED" ? '<span class="badge ACCEPTED">CONSENSUS ACCEPTED — AWAITING FINALITY</span>' : '<span class="badge '+esc(st)+'">'+esc(st)+'</span>';
+    /* Honest finality: the onchain record stores the consensus lifecycle,
+       not the protocol-level tx status. Session receipt data is shown when
+       available (this browser ran the tx); otherwise the protocol status of
+       THIS run's transaction is simply not embedded in the record — we show
+       exactly what the record says and where the receipt info comes from. */
+    const finality = st === "ACCEPTED" ? '<span class="badge ACCEPTED">CONSENSUS ACCEPTED</span>' : '<span class="badge '+esc(st)+'">'+esc(st)+'</span>';
     pp.innerHTML = `
       <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center">
         <div class="mono dim" style="font-size:12px">${esc(rec.assessment_id||aid)}</div>
@@ -400,7 +412,7 @@ function renderPassport(aid){
         <div class="k">Reason codes</div><div class="v">${(rec.reason_codes||[]).map(c=>'<code>'+esc(c)+'</code>').join(" ")||'<span class="dim">—</span>'}</div>
         <div class="k">Requester</div><div class="v">${esc(rec.requester)}</div>
         <div class="k">Created</div><div class="v">${esc(rec.created_at||'unavailable')}</div>
-        <div class="k">Finalized at</div><div class="v">${esc(rec.finalized_at||'not finalized')}</div>
+        <div class="k">Protocol finality</div><div class="v">${txInfo ? (txInfo.receipt && txInfo.receipt.votes ? 'see transaction status via the explorer link (protocol finality of the run tx is displayed on its explorer page)' : 'unavailable from the onchain record') : 'unavailable in this browser session — check the explorer link for the contract'}</div>
       </div>
       <div class="card" style="background:var(--bg)"><strong>Evidence-based summary (AI, consensus-checked):</strong><p>${esc(rec.summary||'unavailable')}</p>
         <p class="dim" style="font-size:12.5px">Policy evaluated: “${esc(rec.policy_text||'')}”</p>
