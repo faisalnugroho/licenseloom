@@ -64,7 +64,8 @@ code{font-family:var(--mono);background:var(--panel);padding:2px 6px;border-radi
 .hidden{display:none}
 </style>
 </head>
-<body>
+<body data-base-detector>
+
 <div class="wrap">
 <header>
   <div class="logo">License<span>Loom</span></div>
@@ -84,6 +85,12 @@ code{font-family:var(--mono);background:var(--panel);padding:2px 6px;border-radi
 <script src="genlayer-sdk.bundle.js"></script>
 <script>
 "use strict";
+/* base = page directory from the SDK bundle src (root OR GitHub Pages project sites) */
+(function(){ var el = document.querySelector("script[src*=genlayer-sdk]");
+  if(!el) return; try { var u = new URL(el.src);
+    var parts = u.pathname.split("/"); parts.pop();
+    document.documentElement.dataset.base = parts.join("/");
+  } catch(e) {} })();
 /* LicenseLoom dApp — GitHub Pages + GenLayer browser SDK.
    NO fake verification anywhere: every displayed decision comes from the
    deployed contract; consensus counts/statuses come from real receipts;
@@ -166,7 +173,13 @@ function addrLink(addr){ return EXPLORER + "/contracts/" + addr; }
 
 /* ---------- router ---------- */
 function route(){
-  const p = location.pathname.replace(/\/$/,"") || "/";
+  // GitHub Pages project sites serve under /<repo>/ — strip that base so
+  // routes match /, /assess, /assessment/<id>, /history, /about everywhere.
+  const base = location.pathname.replace(/\/(index\.html)?$/, "");
+  let p = location.pathname;
+  if (base && base !== "" && p.startsWith(base)) p = p.slice(base.length) || "/";
+  p = p.replace(/\/$/, "") || "/";
+  p = p.replace(/^\/index\.html$/, "/");
   renderNav(p);
   if (p === "/" || p === "/index.html") return renderHome();
   if (p === "/assess") return renderAssess();
@@ -181,7 +194,7 @@ function renderNav(p){
     a.classList.toggle("active", r === p || (r === "/" && (p==="/"||p==="/index.html")));
   });
 }
-function navTo(path){ history.pushState({}, "", path); route(); }
+function navTo(path){ history.pushState({}, "", (document.documentElement.dataset.base||"") + path); route(); }
 window.addEventListener("popstate", route);
 document.body.addEventListener("click", e=>{
   const a = e.target.closest("a[data-nav]");
