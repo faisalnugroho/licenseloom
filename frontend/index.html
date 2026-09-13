@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LicenseLoom — Consensus-Based License Compatibility Passport</title>
+<meta name="description" content="Consensus-backed technical license compatibility assessments for open-source repositories, powered by GenLayer.">
+<style>
+:root{
+  --bg:#0d1117;--panel:#161b22;--border:#30363d;--text:#e6edf3;--dim:#8b949e;
+  --accent:#58a6ff;--green:#3fb950;--red:#f85149;--amber:#d29922;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:24px}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--border);margin-bottom:28px}
+.logo{font-weight:700;font-size:19px;color:var(--text)}
+.logo span{color:var(--accent)}
+nav a{margin-left:18px;color:var(--dim)}
+nav a.active{color:var(--text);font-weight:600}
+h1{font-size:28px;margin:14px 0 10px}
+h2{font-size:20px;margin:26px 0 10px}
+p{margin:10px 0;color:var(--text)}
+.dim{color:var(--dim)}
+.mono{font-family:var(--mono);font-size:12.5px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:18px;margin:14px 0}
+.disclaimer{border-left:3px solid var(--amber);background:rgba(210,153,34,.08);padding:12px 14px;border-radius:0 8px 8px 0;margin:16px 0;font-size:13.5px}
+.btn{background:var(--accent);color:#0d1117;border:none;padding:10px 20px;border-radius:6px;font-weight:600;font-size:14.5px;cursor:pointer}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.secondary{background:var(--panel);color:var(--text);border:1px solid var(--border)}
+label{display:block;font-size:13px;font-weight:600;margin:14px 0 6px}
+input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:10px;font-size:14px;font-family:inherit}
+textarea{font-family:var(--mono);font-size:12.5px}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;font-family:var(--mono)}
+.badge.COMPATIBLE{background:rgba(63,185,80,.15);color:var(--green);border:1px solid var(--green)}
+.badge.INCOMPATIBLE{background:rgba(248,81,73,.15);color:var(--red);border:1px solid var(--red)}
+.badge.INDETERMINATE,.badge.CREATED,.badge.PROCESSING{background:rgba(210,153,34,.15);color:var(--amber);border:1px solid var(--amber)}
+.badge.ACCEPTED{background:rgba(88,166,255,.15);color:var(--accent);border:1px solid var(--accent)}
+.badge.FINALIZED{background:rgba(63,185,80,.15);color:var(--green);border:1px solid var(--green)}
+.kv{display:grid;grid-template-columns:190px 1fr;gap:6px 14px;font-size:13.5px;margin:10px 0}
+.kv .k{color:var(--dim)}
+.kv .v{font-family:var(--mono);word-break:break-all;font-size:12.5px}
+.status-line{display:flex;gap:8px;align-items:center;margin:8px 0;font-size:13.5px}
+.step{display:flex;gap:10px;align-items:flex-start;margin:8px 0}
+.step .dot{width:10px;height:10px;border-radius:50%;background:var(--border);margin-top:5px;flex-shrink:0}
+.step.done .dot{background:var(--green)}
+.step.active .dot{background:var(--accent);animation:pulse 1.2s infinite}
+.step.fail .dot{background:var(--red)}
+@keyframes pulse{50%{opacity:.4}}
+.err{color:var(--red);font-size:13.5px;margin:8px 0;word-break:break-word}
+.ok{color:var(--green)}
+.wallet{display:flex;gap:8px;align-items:center;font-size:13px;flex-wrap:wrap}
+.wallet .addr{font-family:var(--mono);color:var(--dim)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{color:var(--dim);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+.demo-row{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+.demo-row .btn{font-size:12.5px;padding:7px 12px}
+footer{border-top:1px solid var(--border);margin-top:40px;padding:18px 0;color:var(--dim);font-size:12.5px}
+.spin{display:inline-block;animation:pulse 1.2s infinite}
+code{font-family:var(--mono);background:var(--panel);padding:2px 6px;border-radius:4px;font-size:12.5px}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="logo">License<span>Loom</span></div>
+  <nav>
+    <a href="/" data-route="/">Home</a>
+    <a href="/assess" data-route="/assess">Assess</a>
+    <a href="/history" data-route="/history">History</a>
+    <a href="/about" data-route="/about">About</a>
+  </nav>
+</header>
+<main id="app"></main>
+<footer>
+  LicenseLoom provides a technical evidence-based compatibility assessment, not legal advice or a legal certification.
+  Built on <a href="https://genlayer.com" rel="noopener">GenLayer</a> — decentralized AI-validator consensus.
+</footer>
+</div>
+<script src="genlayer-sdk.bundle.js"></script>
+<script>
+"use strict";
+/* LicenseLoom dApp — GitHub Pages + GenLayer browser SDK.
+   NO fake verification anywhere: every displayed decision comes from the
+   deployed contract; consensus counts/statuses come from real receipts;
+   anything unobtainable is labeled unavailable. */
+
+const SDK = window.GenLayerSDK;
+const CONTRACT_ADDR = window.LICENSELOOM_CONTRACT || "UNCONFIGURED";
+const CHAIN = SDK.studionet;
+const RPC = "https://studio.genlayer.com/api";
+const EXPLORER = "https://explorer-studio.genlayer.com";
+
+const $ = (sel, el) => (el||document).querySelector(sel);
+const app = $("#app");
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const parseJsonSafe = s => { try { return JSON.parse(s); } catch { return null; } };
+
+/* ---------- wallet (burner, localStorage) ---------- */
+const WKEY = "licenseloom_wallets";
+let wallets = [];
+let activeIdx = -1;
+function loadWallets(){
+  try { wallets = JSON.parse(localStorage.getItem(WKEY)||"[]"); } catch { wallets = []; }
+  activeIdx = wallets.length ? Math.max(0, Math.min(wallets.length-1, parseInt(localStorage.getItem(WKEY+"_active")||"0",10))) : -1;
+}
+function persistWallets(){ localStorage.setItem(WKEY, JSON.stringify(wallets)); localStorage.setItem(WKEY+"_active", String(activeIdx)); }
+function activeWallet(){ return activeIdx>=0 ? wallets[activeIdx] : null; }
+async function createBurner(){
+  const pk = SDK.generatePrivateKey();
+  const acct = SDK.createAccount(pk);
+  const w = { name: "Burner "+acct.address.slice(0,8), address: acct.address, pk };
+  wallets.push(w); activeIdx = wallets.length-1; persistWallets();
+  return w;
+}
+async function fundBurner(client, addr){
+  try { await client.request({ method:"sim_fundAccount", params:[addr, "5000000000000000000"] }); } catch(e){ /* labeled in UI */ }
+}
+async function getClient(){
+  const w = activeWallet(); if(!w) return null;
+  return SDK.createClient({ chain: CHAIN, account: SDK.createAccount(w.pk) });
+}
+
+/* ---------- tx lifecycle (never trust the receipt alone) ---------- */
+async function readContract(fn, args){
+  const client = await getClient(); if(!client) throw new Error("No wallet connected");
+  const raw = await client.readContract({ address: CONTRACT_ADDR, functionName: fn, args });
+  return typeof raw === "string" ? parseJsonSafe(raw) : raw;
+}
+async function sendWrite(fn, args, onStatus){
+  const client = await getClient(); if(!client) throw new Error("No wallet connected");
+  const w = activeWallet();
+  onStatus && onStatus("Submitting transaction to GenLayer…");
+  const txHash = await client.writeContract({ address: CONTRACT_ADDR, functionName: fn, args, account: SDK.createAccount(w.pk) });
+  onStatus && onStatus("Submitted — tx " + txHash.slice(0,18) + "… awaiting consensus…");
+  const receipt = await Promise.race([
+    client.waitForTransactionReceipt({ hash: txHash, status: SDK.TransactionStatus.FINALIZED, interval: 5000, retries: 80 }),
+    new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout awaiting finalization — the tx may still finalize; check the explorer")), 6*60*1000)),
+  ]);
+  const leader = receipt && receipt.consensus_data && Array.isArray(receipt.consensus_data.leader_receipt) ? receipt.consensus_data.leader_receipt[0] : null;
+  const exec = leader ? leader.execution_result : undefined;
+  const resultName = receipt && receipt.result_name;
+  if (exec === "FAILURE" || exec === "ERROR" || resultName === "MAJORITY_DISAGREE" || resultName === "NO_MAJORITY") {
+    const stderr = String((leader&&leader.genvm_result&&leader.genvm_result.stderr)||"");
+    const m = stderr.match(/AssertionError: ([^\n]+)/);
+    throw new Error((m&&m[1]) ? m[1] : (fn+" did not execute successfully on chain (exec="+(exec||"?")+", vote="+(resultName||"?")+")"));
+  }
+  return { txHash, receipt };
+}
+
+/* ---------- consensus/finality helpers (real, not simulated) ---------- */
+function consensusInfo(receipt){
+  const votes = receipt && receipt.consensus_data && receipt.consensus_data.votes;
+  if (!votes) return { votesText: "unavailable from receipt", nAgree: null };
+  const entries = Object.entries(votes);
+  const nAgree = entries.filter(([,v])=>v==="agree").length;
+  const nIdle = entries.filter(([,v])=>v==="idle").length;
+  return { votesText: entries.length ? (nAgree+" agree / "+nIdle+" idle (from consensus_data.votes)") : "no votes recorded", nAgree };
+}
+function txLink(hash){ return EXPLORER + "/tx/" + hash; }
+function addrLink(addr){ return EXPLORER + "/contracts/" + addr; }
+
+/* ---------- router ---------- */
+function route(){
+  const p = location.pathname.replace(/\/$/,"") || "/";
+  renderNav(p);
+  if (p === "/" || p === "/index.html") return renderHome();
+  if (p === "/assess") return renderAssess();
+  if (p.startsWith("/assessment/")) return renderPassport(p.slice("/assessment/".length));
+  if (p === "/history") return renderHistory();
+  if (p === "/about") return renderAbout();
+  return renderNotFound();
+}
+function renderNav(p){
+  document.querySelectorAll("nav a").forEach(a=>{
+    const r = a.getAttribute("data-route");
+    a.classList.toggle("active", r === p || (r === "/" && (p==="/"||p==="/index.html")));
+  });
+}
+function navTo(path){ history.pushState({}, "", path); route(); }
+window.addEventListener("popstate", route);
+document.body.addEventListener("click", e=>{
+  const a = e.target.closest("a[data-nav]");
+  if(a){ e.preventDefault(); navTo(a.getAttribute("href")); }
+});
+
+/* ---------- pages ---------- */
+function disclaimerHTML(){
+  return '<div class="disclaimer"><strong>LicenseLoom provides a technical evidence-based compatibility assessment, not legal advice or a legal certification.</strong> It does not guarantee that a repository is legally safe to distribute.</div>';
+}
+
+function renderHome(){
+  app.innerHTML = `
+    <h1>Consensus-backed technical license compatibility assessments for open-source repositories.</h1>
+    <p class="dim">Paste any public GitHub repository, pin its exact revision, pick a distribution policy — and let GenLayer's decentralized AI validators independently gather and interpret the repository's licensing evidence. You get a tamper-evident <strong>License Compatibility Passport</strong>, cryptographically bound to the exact commit that was assessed.</p>
+    ${disclaimerHTML()}
+    <div class="card">
+      <h2>How it works</h2>
+      <div class="kv">
+        <div class="k">1 · Pin the revision</div><div>Branches and tags are resolved to an exact commit SHA and frozen — the passport is about that commit, forever.</div>
+        <div class="k">2 · Gather evidence</div><div>Leader <em>and</em> every validator independently fetch the repository's public licensing evidence (LICENSE, COPYING, NOTICE, package metadata, README, SPDX identifiers) at the pinned SHA.</div>
+        <div class="k">3 · Interpret</div><div>AI validators reconcile declarations — including contradictions — and classify against your distribution policy.</div>
+        <div class="k">4 · Consensus</div><div>Each validator independently re-derives the decision and votes. Only decision-bearing fields are compared; free prose is never rewarded.</div>
+        <div class="k">5 · Passport</div><div>The accepted result is stored onchain, bound to input hash, evidence root, and result hash. Anyone can inspect it.</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Try a demo repository</h2>
+      <p class="dim" style="font-size:13px">These run the <strong>real deployed contract</strong> — not canned results. Expectations are labeled for orientation only; the chain decides.</p>
+      <div class="demo-row">
+        <button class="btn secondary" data-demo="microsoft/markitdown|main|permissive-redistribution|Expected COMPATIBLE: permissive MIT repo">Demo A · markitdown (permissive)</button>
+        <button class="btn secondary" data-demo="torvalds/linux|v6.9|permissive-redistribution|Expected INCOMPATIBLE: GPL-2.0 vs permissive policy">Demo B · linux @ v6.9 (copyleft)</button>
+        <button class="btn secondary" data-demo="octocat/Hello-World|master|permissive-redistribution|Expected INDETERMINATE: no license evidence">Demo C · Hello-World (no license)</button>
+      </div>
+      <a href="/assess" data-nav><button class="btn">Assess a repository →</button></a>
+    </div>
+    <div class="card">
+      <h2>What the result means — and what it does NOT</h2>
+      <p><span class="badge COMPATIBLE">COMPATIBLE</span> The public evidence at this revision appears consistent with your policy.</p>
+      <p><span class="badge INCOMPATIBLE">INCOMPATIBLE</span> The evidence contains a material restriction or conflict that fails your policy.</p>
+      <p><span class="badge INDETERMINATE">INDETERMINATE</span> Evidence is missing, ambiguous, contradictory, or unreachable. A first-class safety outcome — never a shrug.</p>
+      <p class="dim" style="font-size:13px">It does NOT mean "legally safe", "attorney-approved", or "guaranteed compliant". It is a technical reconciliation of publicly observable evidence. Dependency scope is repository-level only; uninspected dependencies are never implied compatible.</p>
+    </div>`;
+  app.querySelectorAll("[data-demo]").forEach(b=>{
+    b.addEventListener("click", ()=>{ sessionStorage.setItem("ll_demo", b.getAttribute("data-demo")); navTo("/assess"); });
+  });
+}
+
+function policyOptions(){
+  return `<option value="permissive-redistribution">A · Permissive Redistribution (MIT/Apache/BSD-style, no copyleft)</option>
+          <option value="internal-use">B · Internal Use (copyleft OK if not distributed)</option>
+          <option value="custom">C · Custom Technical Policy (your text, hashed onchain)</option>`;
+}
+
+function renderAssess(){
+  const demo = sessionStorage.getItem("ll_demo") || "";
+  let dr="", dv="main", dp="permissive-redistribution";
+  if (demo){ const [r,v,p] = demo.split("|"); dr="https://github.com/"+r; dv=v; dp=p; }
+  app.innerHTML = `
+    <h1>Assess a repository</h1>
+    ${disclaimerHTML()}
+    <div class="card" id="walletCard"></div>
+    <div class="card">
+      <label for="repoUrl">GitHub repository URL</label>
+      <input id="repoUrl" placeholder="https://github.com/owner/repo" value="${esc(dr)}">
+      <label for="revision">Revision — exact commit SHA preferred; tag allowed; branch allowed (resolved and frozen to its SHA onchain)</label>
+      <input id="revision" placeholder="commit SHA / tag / branch (e.g. main)" value="${esc(dv)}">
+      <label for="policy">Distribution policy</label>
+      <select id="policy">${policyOptions()}</select>
+      <div id="customWrap" class="hidden">
+        <label for="customPolicy">Custom technical policy (20–1200 chars — hashed and stored as immutable assessment input; NOT legal advice)</label>
+        <textarea id="customPolicy" rows="4" placeholder="The repository must have an identifiable open-source license, must not contain an explicit non-commercial restriction, and must provide enough licensing evidence to determine redistribution compatibility."></textarea>
+      </div>
+      <div style="margin-top:18px"><button class="btn" id="goBtn">Assess Repository</button></div>
+      <div id="statusBox" style="margin-top:14px"></div>
+    </div>
+    <div class="card hidden" id="resultCard"></div>`;
+  $("#policy").value = dp;
+  $("#policy").addEventListener("change", e=>{ $("#customWrap").classList.toggle("hidden", e.target.value!=="custom"); });
+  if (dp==="custom") $("#customWrap").classList.remove("hidden");
+  renderWalletControl();
+  $("#goBtn").addEventListener("click", runAssessFlow);
+}
+
+function walletBadgeHTML(){
+  const w = activeWallet();
+  if(!w) return '<span class="dim">No wallet connected</span>';
+  return '<span class="addr">'+esc(w.address)+'</span>';
+}
+async function renderWalletControl(){
+  loadWallets();
+  const el = $("#walletCard"); if(!el) return;
+  el.innerHTML = `<h2 style="margin-top:0">Wallet</h2>
+    <div class="wallet">${walletBadgeHTML()}
+      ${activeWallet()?'':'<button class="btn secondary" id="mkw">Create burner wallet</button>'}
+    </div>
+    ${CONTRACT_ADDR==="UNCONFIGURED"?'<p class="err">Contract address not configured — this deployment is not wired to a live contract. Assessments are unavailable.</p>':''}
+    <p class="dim" style="font-size:12.5px;margin-top:6px">Burner wallet keys live only in this browser (localStorage). Studionet testnet faucet funds each new burner automatically.</p>`;
+  const mk = $("#mkw");
+  if(mk) mk.addEventListener("click", async ()=>{
+    mk.disabled = true; mk.textContent = "Creating…";
+    const w = await createBurner();
+    const client = SDK.createClient({ chain: CHAIN });
+    mk.textContent = "Funding from faucet…";
+    await fundBurner(client, w.address);
+    renderWalletControl();
+  });
+}
+
+async function runAssessFlow(){
+  const statusBox = $("#statusBox"), resultCard = $("#resultCard"), goBtn = $("#goBtn");
+  const repo = $("#repoUrl").value.trim();
+  const rev = $("#revision").value.trim();
+  const pol = $("#policy").value;
+  const cust = pol==="custom" ? $("#customPolicy").value.trim() : "";
+  const setSteps = html => { statusBox.innerHTML = html; };
+  try{
+    if(!activeWallet()){ setSteps('<div class="err">Create a burner wallet first.</div>'); return; }
+    goBtn.disabled = true;
+    setSteps('<div class="step active"><div class="dot"></div><div>Registering assessment request onchain…</div></div>');
+    const r1 = await sendWrite("request_assessment", [repo, rev, pol, cust], s=>{
+      setSteps('<div class="step active"><div class="dot"></div><div>'+esc(s)+'</div></div>');
+    });
+    setSteps('<div class="step done"><div class="dot"></div><div>Request accepted — tx <a href="'+txLink(r1.txHash)+'" target="_blank" rel="noopener">'+esc(r1.txHash.slice(0,20))+'…</a></div></div>');
+    const total = await readContract("total_assessments", []);
+    const aid = "ll-" + (total.total ?? total);
+    sessionStorage.setItem("ll_last", aid);
+    addHistoryEntry(aid);
+    resultCard.classList.remove("hidden");
+    resultCard.innerHTML = '<h2 style="margin-top:0">Assessment <span class="mono">'+esc(aid)+'</span></h2><div class="step active"><div class="dot"></div><div>Consensus round running: leader + validators are independently fetching the pinned revision and interpreting evidence… (typically 1–3 minutes)</div></div>';
+    let runOk = false, runReceipt = null, lastErr = "";
+    for(let attempt=1; attempt<=3 && !runOk; attempt++){
+      try{
+        const r2 = await sendWrite("run_assessment", [aid], s=>{
+          resultCard.innerHTML = '<h2 style="margin-top:0">Assessment <span class="mono">'+esc(aid)+'</span></h2><div class="step active"><div class="dot"></div><div>'+esc(s)+(attempt>1?' (attempt '+attempt+')':'')+'</div></div>';
+        });
+        runOk = true; runReceipt = r2;
+      }catch(e){
+        lastErr = e.message;
+        resultCard.innerHTML = '<h2 style="margin-top:0">Assessment <span class="mono">'+esc(aid)+'</span></h2><div class="step fail"><div class="dot"></div><div>Consensus attempt '+attempt+' did not seal: '+esc(lastErr)+'</div></div>';
+        if(!/assessment_not_created|timeout/.test(lastErr)) { throw e; }
+      }
+    }
+    if(!runOk) throw new Error(lastErr || "consensus did not accept the assessment");
+    const rec = await readContract("get_assessment", [aid]);
+    sessionStorage.setItem("ll_rec_"+aid, JSON.stringify({rec, txHash: runReceipt.txHash, receipt: {result_name: runReceipt.receipt.result_name, votes: consensusInfo(runReceipt.receipt).votesText, exec: (runReceipt.receipt.consensus_data&&runReceipt.receipt.consensus_data.leader_receipt&&runReceipt.receipt.consensus_data.leader_receipt[0]||{}).execution_result}}));
+    navTo("/assessment/"+aid);
+  }catch(e){
+    setSteps('<div class="err">'+esc(e.message)+'</div>');
+    goBtn.disabled = false;
+  }
+}
+
+function addHistoryEntry(aid){
+  try{
+    const h = JSON.parse(localStorage.getItem("ll_history")||"[]");
+    if(!h.includes(aid)) h.unshift(aid);
+    localStorage.setItem("ll_history", JSON.stringify(h.slice(0,50)));
+  }catch{}
+}
+
+function renderHistory(){
+  const h = (()=>{ try{ return JSON.parse(localStorage.getItem("ll_history")||"[]"); }catch{ return []; } })();
+  app.innerHTML = `
+    <h1>Your assessments</h1>
+    <p class="dim">Assessments started from this browser. Anyone can open a passport by its ID — history is local to this browser only.</p>
+    ${h.length ? `<div class="card"><table><tr><th>Assessment</th><th>Open</th></tr>${h.map(a=>`<tr><td class="mono">${esc(a)}</td><td><a href="/assessment/${esc(a)}" data-nav>passport →</a></td></tr>`).join("")}</table></div>` : '<div class="card dim">No assessments yet. <a href="/assess" data-nav>Run the first one →</a></div>'}`;
+}
+
+function renderPassport(aid){
+  const cached = parseJsonSafe(sessionStorage.getItem("ll_rec_"+aid));
+  app.innerHTML = '<h1>License Compatibility Passport</h1><div id="pp" class="card"><p class="dim spin">Loading assessment <span class="mono">'+esc(aid)+'</span> from the contract…</p></div>';
+  (async ()=>{
+    const pp = $("#pp");
+    let rec = null, txInfo = cached || null;
+    try{
+      rec = await readContract("get_assessment", [aid]);
+    }catch(e){
+      if(cached) rec = cached.rec;
+      else { pp.innerHTML = '<p class="err">Could not read from the contract: '+esc(e.message)+'</p><p class="dim">If no burner wallet is present in this browser, create one on the Assess page (reads require a client account on Studionet), or open the assessment directly in the <a href="'+EXPLORER+'/contracts/'+CONTRACT_ADDR+'" target="_blank" rel="noopener">explorer</a>.</p>'; return; }
+    }
+    if(!rec || rec.error){ pp.innerHTML = '<p class="err">Assessment not found onchain: '+esc(rec&&rec.error||aid)+'</p>'; return; }
+    const d = rec.decision || "";
+    const st = rec.status || "";
+    const finality = st === "ACCEPTED" ? '<span class="badge ACCEPTED">CONSENSUS ACCEPTED — AWAITING FINALITY</span>' : '<span class="badge '+esc(st)+'">'+esc(st)+'</span>';
+    pp.innerHTML = `
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center">
+        <div class="mono dim" style="font-size:12px">${esc(rec.assessment_id||aid)}</div>
+        <div>${d?'<span class="badge '+esc(d)+'">'+esc(d)+'</span>':''} ${finality}</div>
+      </div>
+      <div class="kv">
+        <div class="k">Repository</div><div class="v"><a href="https://github.com/${esc(rec.repo_full)}" target="_blank" rel="noopener">${esc(rec.repo_full)}</a></div>
+        <div class="k">Requested revision</div><div class="v">${esc(rec.requested_revision)}</div>
+        <div class="k">Resolved commit SHA</div><div class="v">${rec.resolved_commit_sha?esc(rec.resolved_commit_sha):'<span class="dim">unavailable — see reason codes</span>'}</div>
+        <div class="k">Policy</div><div class="v">${esc(rec.policy_id)} (v${esc(rec.policy_version)})</div>
+        <div class="k">Policy hash</div><div class="v">${esc(rec.policy_hash)}</div>
+        <div class="k">Input hash</div><div class="v">${esc(rec.input_hash)}</div>
+        <div class="k">Evidence root</div><div class="v">${rec.evidence_root?esc(rec.evidence_root):'<span class="dim">not set (no accepted evidence)</span>'}</div>
+        <div class="k">Result hash</div><div class="v">${rec.result_hash?esc(rec.result_hash):'<span class="dim">not set</span>'}</div>
+        <div class="k">Detected licenses</div><div class="v">${(rec.detected_license_families||[]).map(f=>'<code>'+esc(f)+'</code>').join(" ")||'<span class="dim">none detected</span>'}</div>
+        <div class="k">Conflicts detected</div><div class="v">${rec.conflicts_detected?'<span class="err">YES</span>':'no'}</div>
+        <div class="k">Missing critical evidence</div><div class="v">${rec.missing_critical_evidence?'<span class="err">YES</span>':'no'}</div>
+        <div class="k">Reason codes</div><div class="v">${(rec.reason_codes||[]).map(c=>'<code>'+esc(c)+'</code>').join(" ")||'<span class="dim">—</span>'}</div>
+        <div class="k">Requester</div><div class="v">${esc(rec.requester)}</div>
+        <div class="k">Created</div><div class="v">${esc(rec.created_at||'unavailable')}</div>
+        <div class="k">Finalized at</div><div class="v">${esc(rec.finalized_at||'not finalized')}</div>
+      </div>
+      <div class="card" style="background:var(--bg)"><strong>Evidence-based summary (AI, consensus-checked):</strong><p>${esc(rec.summary||'unavailable')}</p>
+        <p class="dim" style="font-size:12.5px">Policy evaluated: “${esc(rec.policy_text||'')}”</p>
+      </div>
+      ${txInfo ? `<div class="kv">
+        <div class="k">Run transaction</div><div class="v"><a href="${txLink(txInfo.txHash)}" target="_blank" rel="noopener">${esc(txInfo.txHash)}</a></div>
+        <div class="k">Consensus</div><div class="v">${esc(txInfo.receipt&&txInfo.receipt.votes||'unavailable from receipt')}</div>
+        <div class="k">Execution result</div><div class="v">${esc(txInfo.receipt&&txInfo.receipt.exec||'unavailable')}</div>
+      </div>` : '<p class="dim" style="font-size:12.5px">Consensus receipt data for this run is not in this browser session — inspect the contract history in the <a href="'+addrLink(CONTRACT_ADDR)+'" target="_blank" rel="noopener">explorer</a>.</p>'}
+      ${disclaimerHTML()}
+      <p class="dim" style="font-size:12px">This passport reconstructs its state from the onchain assessment record. Status reflects the GenLayer protocol lifecycle (consensus acceptance vs. finality are distinct). No validator counts are displayed unless taken from the actual receipt.</p>`;
+  })();
+}
+
+function renderAbout(){
+  app.innerHTML = `
+    <h1>About LicenseLoom</h1>
+    ${disclaimerHTML()}
+    <div class="card"><h2>What LicenseLoom does</h2>
+      <p>LicenseLoom answers one question: <em>given a GitHub repository pinned to an exact commit and a declared distribution policy, does the repository's publicly observable licensing evidence technically reconcile with that policy?</em> A traditional script can find a LICENSE file — LicenseLoom instead makes a decentralized network of independent AI validators gather, normalize, and interpret all the licensing evidence at that revision, reconcile contradictions, and vote on a classification. The accepted result is a tamper-evident onchain passport bound to the exact inputs.</p>
+    </div>
+    <div class="card"><h2>What GenLayer does here</h2>
+      <p>GenLayer runs a leader/validator consensus round around the assessment: a leader proposes a normalized decision; every validator <strong>independently re-runs the entire pipeline</strong> — resolving the revision, fetching the same public evidence at the same pinned SHA, interpreting it against the same policy — and votes only if its own derivation matches the leader's on decision-bearing fields. Free-form explanations are never compared. If validators cannot reproduce the decision, it is not accepted.</p>
+    </div>
+    <div class="card"><h2>What validators verify</h2>
+      <p>Exact repository identity, exact resolved commit SHA, exact policy id/version/hash, the normalized evidence root, the detected license families, conflict and missing-evidence flags, the decision itself, and required reason codes. The validator is not a format-checker: it re-derives the verdict from the same public evidence.</p>
+    </div>
+    <div class="card"><h2>Decision semantics</h2>
+      <p><span class="badge COMPATIBLE">COMPATIBLE</span> available public evidence sufficiently supports technical compatibility with the selected policy.</p>
+      <p><span class="badge INCOMPATIBLE">INCOMPATIBLE</span> the evidence contains a material conflict or restriction that fails the policy.</p>
+      <p><span class="badge INDETERMINATE">INDETERMINATE</span> evidence is insufficient, inaccessible, contradictory, or too ambiguous to classify safely — a first-class safety outcome. Unreachable GitHub, rate-limits, unresolved revisions, and contradictory declarations all fail safe to INDETERMINATE, never to COMPATIBLE.</p>
+    </div>
+    <div class="card"><h2>Limitations</h2>
+      <ul style="margin-left:18px;color:var(--dim);font-size:13.5px">
+        <li>Repository-level evidence only (v1): LICENSE/COPYING/NOTICE/README + top-level package metadata. Directly declared dependency metadata where present; no recursive dependency crawling — uninspected dependencies are never implied compatible.</li>
+        <li>GitHub is the public evidence source, not a trusted oracle: the network interprets what is there; it does not certify it.</li>
+        <li>Evidence files are capped in size; excerpts only. Full files remain fetchable at the pinned revision by anyone.</li>
+        <li>Branches move — the assessment freezes the commit SHA at assessment time and stays bound to it.</li>
+        <li>Not legal advice, not a legal certification, not a guarantee of legal safety.</li>
+      </ul>
+    </div>
+    <div class="card"><h2>Contract & network</h2>
+      <p>Intelligent contract (Studionet testnet): <span class="mono">${CONTRACT_ADDR==="UNCONFIGURED"?'<span class="err">unavailable — not configured</span>':'<a href="'+addrLink(CONTRACT_ADDR)+'" target="_blank" rel="noopener">'+CONTRACT_ADDR+'</a>'}</span></p>
+      <p class="dim" style="font-size:12.5px">Every assessment on this site executes through the deployed contract. No consensus results, validator votes, or transaction hashes are simulated, and anything unobtainable is labeled unavailable.</p>
+    </div>`;
+}
+
+function renderNotFound(){
+  app.innerHTML = '<h1>Not found</h1><p class="dim">Try <a href="/" data-nav>home</a> or <a href="/assess" data-nav>assess a repository</a>.</p>';
+}
+
+/* boot */
+loadWallets();
+route();
+</script>
+</body>
+</html>

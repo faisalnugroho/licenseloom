@@ -1,0 +1,7 @@
+# git secrets
+scripts/smoke_deployer.json
+*.key
+.env
+__pycache__/
+artifacts/
+.pytest_cache/
