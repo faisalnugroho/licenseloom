@@ -175,9 +175,9 @@ function addrLink(addr){ return EXPLORER + "/contracts/" + addr; }
 function route(){
   // GitHub Pages project sites serve under /<repo>/ — strip that base so
   // routes match /, /assess, /assessment/<id>, /history, /about everywhere.
-  const base = location.pathname.replace(/\/(index\.html)?$/, "");
+  const base = document.documentElement.dataset.base || "";
   let p = location.pathname;
-  if (base && base !== "" && p.startsWith(base)) p = p.slice(base.length) || "/";
+  if (base && p.startsWith(base)) p = p.slice(base.length) || "/";
   p = p.replace(/\/$/, "") || "/";
   p = p.replace(/^\/index\.html$/, "/");
   renderNav(p);
