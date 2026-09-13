@@ -1,0 +1,87 @@
+[
+  {
+    "deployed_at": "2026-09-13T08:34:17Z",
+    "deploy_tx": "0xecf392ee13580040d808f7937e1978eaf9118311dd74b68efcd8d3f86121d0bd",
+    "contract_address": "0x0F4f09Ac9fB036Ca295C1B7c589E411409589ff0",
+    "deployer": "0x5E77b8D3655918454134a2d5BAd9dd76B741b4cB",
+    "network": "studionet",
+    "note": "resumed harness; ll-1 request tx 0x7cd32dd684a3a88f1655479c54a3f7afc09d8d0dd9bb9de7ecbcea2476086082 (ACCEPTED, 5/5 agree) from prior run",
+    "scenarios": [
+      {
+        "scenario": "A-markitdown-permissive",
+        "repo": "https://github.com/microsoft/markitdown",
+        "revision": "main",
+        "policy": "permissive-redistribution",
+        "assessment_id": "ll-1",
+        "decision": "COMPATIBLE",
+        "expected": "COMPATIBLE",
+        "matches_expectation": true,
+        "resolved_commit_sha": "cc0ca9edd8e23b2c7f7b778c7b148c1565730498",
+        "evidence_root": "6f66472b9766c3be4cfc22477b2ea1de8e076ff9f16af1b2cd02bbc37e9b67cb",
+        "result_hash": "14299e18d4e2981807a1baa05c67dc8e4d99e14d48720c57cf6fce57a574b8d0",
+        "detected_license_families": [
+          "MIT"
+        ],
+        "reason_codes": [
+          "LICENSE_OK_CONSISTENT",
+          "POLICY_PASS"
+        ],
+        "summary": "The repository contains a clear MIT License file, which is a permissive open-source license. No conflicts or restrictive terms were detected in the reviewed evidence, making it compatible with the permissive redistribution policy.",
+        "request_tx": "0x7cd32dd684a3a88f1655479c54a3f7afc09d8d0dd9bb9de7ecbcea2476086082",
+        "run_tx": "0x7cc2b7e338dadebe77e3d2784d47a3b7c072d9d7d861781eb1d1862ab144b2f3",
+        "consensus": "request 5/5 agree; run 3/5 agree 2/5 idle (quorum reached, round sealed); all txs FINALIZED"
+      },
+      {
+        "scenario": "B-linux-gpl-permissive",
+        "repo": "https://github.com/torvalds/linux",
+        "revision": "v6.9",
+        "policy": "permissive-redistribution",
+        "assessment_id": "ll-2",
+        "decision": "INCOMPATIBLE",
+        "expected": "INCOMPATIBLE",
+        "matches_expectation": true,
+        "resolved_commit_sha": "a38297e3fb012ddfa7ce0321a7e5a8daeb1872b6",
+        "evidence_root": "c2d1bfd3b795bf28a8b691dceb4a3ec2ee2bd9a327dd833a79fcfc8e7d87db58",
+        "result_hash": "3c8460f23af0badba92f3dce43e697e9372095fde7c14e5aff721ef8722d830c",
+        "detected_license_families": [
+          "GPL-2.0"
+        ],
+        "reason_codes": [
+          "LICENSE_RESTRICTIVE",
+          "POLICY_FAIL"
+        ],
+        "summary": "The Linux kernel is licensed under GPL-2.0 with Linux-syscall-note exception, as declared in the COPYING file. GPL-2.0 is a strong-copyleft license that requires derivative works to be distributed under the same terms, which fails the permissive-redistribution policy.",
+        "request_tx": "0x78418f3e44713ab99b562d07a14558bc49e8fded8aecda4a536310b973ec47a3",
+        "run_tx": "0xbfe4579334561f71a9bfe571deef6ce3a1f478d3b9bd598984911156535785c8",
+        "consensus": "run 3/5 agree 2/5 idle (quorum reached, 1 round); FINALIZED"
+      },
+      {
+        "scenario": "C-helloworld-nolicense-permissive",
+        "repo": "https://github.com/octocat/Hello-World",
+        "revision": "master",
+        "policy": "permissive-redistribution",
+        "assessment_id": "ll-3",
+        "decision": "INDETERMINATE",
+        "expected": "INDETERMINATE",
+        "matches_expectation": true,
+        "resolved_commit_sha": "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+        "evidence_root": "28d1f009fdc329908e026d98402ffd7c235ee831c1ba5de0dd086d561c726557",
+        "result_hash": "074e65b399acd256802a9aad4446eb4b4c74b552b83bc1c66fa8bc3e6af340a1",
+        "detected_license_families": [],
+        "reason_codes": [
+          "EVIDENCE_FETCH_FAILED",
+          "NO_LICENSE_EVIDENCE",
+          "EVIDENCE_INSUFFICIENT"
+        ],
+        "summary": "No licensing evidence could be retrieved from the repository. Critical files like LICENSE, COPYING, and package metadata were not found or failed to fetch, making it impossible to determine license compatibility.",
+        "request_tx": "0x164dc41a5cd2f3acea315516df6227989aeb5cb84da32280eb9f962a76db34f1",
+        "run_tx": "0x27f26875e03e3b0140f09aee5d4ba233385f9124430352ca51b24beec54830bc",
+        "consensus": "run sealed after 2 rounds (first-round divergence honestly re-run); FINALIZED"
+      }
+    ],
+    "evidence_verification": {
+      "method": "explorer-studio.genlayer.com API tx decode: calldata method+args matched to each scenario; consensus votes read from consensus_data.votes; statuses FINALIZED",
+      "deploy_tx_exec": "deploy vote=MAJORITY_AGREE exec=SUCCESS rounds=1"
+    }
+  }
+]

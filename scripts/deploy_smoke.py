@@ -37,12 +37,25 @@ def load_account():
 
 
 def wait_final(client, tx_hash, label):
-    """Wait FINALIZED; parse BOTH consensus vote AND execution result."""
-    receipt = client.wait_for_transaction_receipt(
-        transaction_hash=tx_hash,
-        status=TransactionStatus.FINALIZED,
-        full_transaction=True,
-    )
+    """Wait FINALIZED; parse BOTH consensus vote AND execution result.
+
+    ACCEPTED can take a while to become FINALIZED — poll with generous
+    retries (proven studionet pattern).
+    """
+    for attempt in range(3):
+        try:
+            receipt = client.wait_for_transaction_receipt(
+                transaction_hash=tx_hash,
+                status=TransactionStatus.FINALIZED,
+                full_transaction=True,
+                retries=60,      # 60 x 3s = 3 minutes per attempt
+                interval=3000,
+            )
+            break
+        except Exception as e:
+            if attempt == 2:
+                raise
+            time.sleep(5)
     if not isinstance(receipt, dict):
         receipt = dict(receipt or {})
     result_name = receipt.get("result_name")
