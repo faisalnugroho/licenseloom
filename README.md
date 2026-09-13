@@ -63,6 +63,7 @@ tests/direct/              46 direct-mode tests (anti-mismatch matrix, injection
 scripts/deploy_smoke.py   Studionet deploy + live demo smoke harness
 frontend/                  Single-page dApp (GitHub Pages + GenLayer browser SDK)
 docs/deployment_log.json   Live deployment evidence (appended per run)
+artifacts/e2e-ll4-passport.png   Live E2E passport screenshot (ll-4, psf/requests)
 ```
 
 ## Demo set (expectations only — the chain decides)

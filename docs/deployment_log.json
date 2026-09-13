@@ -83,5 +83,49 @@
       "method": "explorer-studio.genlayer.com API tx decode: calldata method+args matched to each scenario; consensus votes read from consensus_data.votes; statuses FINALIZED",
       "deploy_tx_exec": "deploy vote=MAJORITY_AGREE exec=SUCCESS rounds=1"
     }
+  },
+  {
+    "audited_at": "2026-09-13T11:20:00Z",
+    "audit_type": "live browser E2E (Camofox main-world DOM bridge)",
+    "app_url": "https://faisalnugroho.github.io/licenseloom",
+    "scenario": "E2E-psf-requests-permissive",
+    "repo": "https://github.com/psf/requests",
+    "revision": "main",
+    "policy": "permissive-redistribution",
+    "assessment_id": "ll-4",
+    "decision": "COMPATIBLE",
+    "detected_license_families": [
+      "Apache-2.0"
+    ],
+    "reason_codes": [
+      "LICENSE_OK_CONSISTENT",
+      "POLICY_PASS"
+    ],
+    "resolved_commit_sha": "dae7ef63b4df6eded86637f251fc4e3a06c3b479",
+    "input_hash": "0fa5caa654076b39288bfdab975c430ceab6a8a1d2affa6900fe2f6d50197969",
+    "evidence_root": "2cb36a05874060ee51869112a8e8079cac02a928c2a59b2da22c6ee1bfae7489",
+    "result_hash": "4d50652fe68fbbd0b7f1b67d577adee05af67bdd15cb2236d3b8b03fc7587cfd",
+    "request_tx": "0x895d68a8c4dd0e63f34d50856d9f49775979ca82c939b63b36dd969e418910c8",
+    "run_tx": "0x1aa93160edb4909ea55daefa28d95aa38ff5fa48f03963c5d92d1666ad806717",
+    "requester_burner": "0xE46bC99bC187f5603700726Dc7F62db443399A45",
+    "consensus": "request ACCEPTED 3/5 agree; run tx FINALIZED 3/5 agree",
+    "ui_flow_verified": [
+      "landing \u2192 /assess SPA nav (data-route click)",
+      "burner wallet created via UI (localStorage)",
+      "form fill: repo+revision+policy via native setter + input events",
+      "goBtn click \u2192 request_assessment write captured: args [https://github.com/psf/requests, main, permissive-redistribution, '']",
+      "statusBox: Submitted \u2192 Request accepted; auto transition to /assessment/ll-4",
+      "run_assessment write captured: args [ll-4]",
+      "passport rendered: all decision-bearing fields match onchain record (repo, SHA, policy id+version, input_hash, evidence_root, result_hash, decision, detected Apache-2.0, reason codes, requester)",
+      "CONSENSUS ACCEPTED badge (not fake finality); protocol finality honestly deferred to explorer link",
+      "disclaimer present; no fake validator counts; no horizontal overflow; 0 broken images; 0 JS errors"
+    ],
+    "verification": {
+      "method": "Camofox /evaluate isolated-world + main-world DOM bridge (script tag injection, b64 payload with 'return' prefix \u2014 final bridge pattern); explorer API decode; genlayer_py read_contract cross-check",
+      "dom_vs_chain": "all decision-bearing fields identical",
+      "explorer_run_tx_status": "FINALIZED"
+    },
+    "screenshot": "artifacts/e2e-ll4-passport.png",
+    "notes": "E2E resumed after session interruption (signal 1). Prior session root-caused the nav bug (fixed in ab553d9) and the isolated-world evaluate behavior. This audit completed the remaining E2E: full user flow with real consensus, fresh-session deep-route load of /assessment/ll-4, visual QA via computed styles."
   }
 ]
