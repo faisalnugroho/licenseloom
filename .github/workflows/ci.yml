@@ -2,7 +2,7 @@ name: CI — LicenseLoom
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
 
 jobs:
